@@ -2,5 +2,13 @@
 name = "day-1"
 version = "0.1.0"
 edition = "2021"
+authors = ["Mantas Gricius <mantasgricius6@email.com>"]
+license = "MIT OR Apache-2.0"
+description = "Advent of code challenges in RUST"
+readme = "README.md"
+homepage = "https://github.com/MantasG6/advent-of-code-2024"
+repository = "https://github.com/MantasG6/advent-of-code-2024"
+keywords = ["advent", "array", "list", "compare"]
+categories = ["command-line-utilities"]
 
 [dependencies]
