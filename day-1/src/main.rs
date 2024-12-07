@@ -1,5 +1,4 @@
 use anyhow::Result;
-use day_1::get_lists;
 
 /// Find the difference between 2 lists in the file.
 fn main() -> Result<()> {
@@ -8,7 +7,7 @@ fn main() -> Result<()> {
 
     let content = day_1::read_file(input_path)?;
 
-    let (l1,l2) = get_lists(&content)?;
+    let (l1,l2) = day_1::get_lists(&content)?;
 
     println!("List1: ");
     for num in l1 {

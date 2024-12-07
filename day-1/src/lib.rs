@@ -1,5 +1,30 @@
+#![warn(missing_docs)]
+//! Advent of code 2024 Day 1 Challenge
+//! 
+//! Functions to complete the task for advent of code 2024
+//! 
+
 use anyhow::{Context, Error, Result};
 
+/// Reads a file from a given path
+/// 
+/// Reads a file from a given path and returns String containing full text
+/// of the file or Error if the reading was unsuccessfull
+/// 
+/// # Examples
+/// ```
+/// use assert_fs::prelude::*;
+/// use anyhow::Result;
+/// 
+/// fn main() -> Result<()> {
+///     let file = assert_fs::NamedTempFile::new("sample.txt")?;
+///     file.write_str("Example text")?;
+///     let result = day_1::read_file(file.path())?;
+///     println!("{}", result);
+///     Ok(())
+/// }
+/// ```
+/// 
 pub fn read_file(path: &std::path::Path) -> Result<String, Error> {
     let contents = std::fs::read_to_string(path)
     .with_context(|| format!("could not read file {}", path.display()))?;
@@ -7,6 +32,23 @@ pub fn read_file(path: &std::path::Path) -> Result<String, Error> {
     Ok(contents)
 }
 
+/// Creates the lists of numbers
+/// 
+/// Based on provided text (String) splits the numbers
+/// and puts them in 2 separate lists
+/// 
+/// #Examples
+/// ```
+/// use anyhow::{Ok, Result};
+/// 
+/// fn main() -> Result<()> {
+///     let text = "123   45\n33   45\n2   45\n";
+///     let (l1,l2) = day_1::get_lists(&text)?;
+///     assert!(!l1.is_empty());
+///     assert!(!l2.is_empty());
+///     Ok(())
+/// }
+/// ```
 pub fn get_lists(text: &str) -> Result<(Vec<&str>, Vec<&str>), Error> {
     let mut list1: Vec<&str> = Vec::new();
     let mut list2: Vec<&str> = Vec::new();
