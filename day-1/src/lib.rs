@@ -2,9 +2,51 @@
 //! Advent of code 2024 Day 1 Challenge
 //! 
 //! Functions to complete the task for advent of code 2024
-//! 
 
-use anyhow::{Context, Error, Result};
+use anyhow::{Context, Error, Ok, Result};
+
+
+/// Find difference between 2 vectors
+/// 
+/// Compare each number in 2 vectors and
+/// accumulate the general difference between them
+/// 
+/// # Example
+/// ```
+/// use anyhow::Result;
+/// 
+/// fn main() -> Result<()> {
+///     let v1 = vec!["3", "4", "2", "1", "3", "3"];
+///     let v2 = vec!["4", "3", "5", "3", "9", "3"];
+///     let diff = day_1::difference(v1, v2)?;
+///     assert_eq!(diff, 11);
+///     Ok(())
+/// }
+/// ```
+pub fn difference(list1: Vec<&str>, list2: Vec<&str>) -> Result<i32> {
+    let mut diff: i32 = 0;
+
+    let mut sorted_list1 = list1.clone();
+    sorted_list1.sort();
+    let mut sorted_list2 = list2.clone();
+    sorted_list2.sort();
+
+    for i in 0..sorted_list1.len() {
+        let sym1 = sorted_list1.get(i)
+        .with_context(|| format!("failed reading symbol from List 1"))?;
+        let num1 = sym1.parse::<i32>()
+        .with_context(|| format!("failed parsing {} to number", sym1))?;
+        let sym2 = sorted_list2.get(i)
+        .with_context(|| format!("failed reading symbol from List 2"))?;
+        let num2 = sym2.parse::<i32>()
+        .with_context(|| format!("failed parsing {} to number", sym2))?;
+
+        let diff_i = num1 - num2;
+        diff = diff + diff_i.abs();
+    }
+
+    Ok(diff)
+}
 
 /// Reads a file from a given path
 /// 
@@ -24,7 +66,6 @@ use anyhow::{Context, Error, Result};
 ///     Ok(())
 /// }
 /// ```
-/// 
 pub fn read_file(path: &std::path::Path) -> Result<String, Error> {
     let contents = std::fs::read_to_string(path)
     .with_context(|| format!("could not read file {}", path.display()))?;
@@ -72,8 +113,25 @@ pub fn get_lists(text: &str) -> Result<(Vec<&str>, Vec<&str>), Error> {
 mod tests {
     use assert_fs::prelude::*;
     use anyhow::{Ok, Result};
-    use crate::{get_lists, read_file};
+    use crate::{difference, get_lists, read_file};
 
+    #[test]
+    fn test_difference_success() -> Result<()> {
+        let v1 = vec!["3", "4", "2", "1", "3", "3"];
+        let v2 = vec!["4", "3", "5", "3", "9", "3"];
+        let diff = difference(v1, v2)?;
+        assert_eq!(diff, 11);
+        Ok(())
+    }
+
+    #[test]
+    fn test_difference_negative() -> Result<()> {
+        let v1 = vec!["3", "4", "asd", "1", "3", "3"];
+        let v2 = vec!["4", "3", "5", "3", "9", "3"];
+        let diff = difference(v1, v2);
+        assert!(diff.is_err_and(|e| e.to_string().eq("failed parsing asd to number")));
+        Ok(())
+    }
 
     #[test]
     fn test_read_file_success() -> Result<()> {
