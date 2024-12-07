@@ -8,9 +8,9 @@ fn main() -> Result<()> {
 
     let (l1,l2) = day_1::get_lists(&content)?;
 
-    let diff = day_1::difference(l1, l2)?;
+    let dist = day_1::distance(l1, l2)?;
 
-    println!("Lists path: {}\nDifference: {}", input_path.display(), diff);
+    println!("Lists path: {}\nDistance: {}", input_path.display(), dist);
 
     Ok(())
 }

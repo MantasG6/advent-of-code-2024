@@ -6,10 +6,10 @@
 use anyhow::{Context, Error, Ok, Result};
 
 
-/// Find difference between 2 vectors
+/// Find distance between 2 vectors
 /// 
 /// Compare each number in 2 vectors and
-/// accumulate the general difference between them
+/// accumulate total distance
 /// 
 /// # Example
 /// ```
@@ -18,13 +18,13 @@ use anyhow::{Context, Error, Ok, Result};
 /// fn main() -> Result<()> {
 ///     let v1 = vec!["3", "4", "2", "1", "3", "3"];
 ///     let v2 = vec!["4", "3", "5", "3", "9", "3"];
-///     let diff = day_1::difference(v1, v2)?;
-///     assert_eq!(diff, 11);
+///     let dist = day_1::distance(v1, v2)?;
+///     assert_eq!(dist, 11);
 ///     Ok(())
 /// }
 /// ```
-pub fn difference(list1: Vec<&str>, list2: Vec<&str>) -> Result<i32> {
-    let mut diff: i32 = 0;
+pub fn distance(list1: Vec<&str>, list2: Vec<&str>) -> Result<i32> {
+    let mut dist: i32 = 0;
 
     let mut sorted_list1 = list1.clone();
     sorted_list1.sort();
@@ -41,11 +41,11 @@ pub fn difference(list1: Vec<&str>, list2: Vec<&str>) -> Result<i32> {
         let num2 = sym2.parse::<i32>()
         .with_context(|| format!("failed parsing {} to number", sym2))?;
 
-        let diff_i = num1 - num2;
-        diff = diff + diff_i.abs();
+        let dist_i = num1 - num2;
+        dist = dist + dist_i.abs();
     }
 
-    Ok(diff)
+    Ok(dist)
 }
 
 /// Reads a file from a given path
@@ -113,23 +113,23 @@ pub fn get_lists(text: &str) -> Result<(Vec<&str>, Vec<&str>), Error> {
 mod tests {
     use assert_fs::prelude::*;
     use anyhow::{Ok, Result};
-    use crate::{difference, get_lists, read_file};
+    use crate::{distance, get_lists, read_file};
 
     #[test]
-    fn test_difference_success() -> Result<()> {
+    fn test_distance_success() -> Result<()> {
         let v1 = vec!["3", "4", "2", "1", "3", "3"];
         let v2 = vec!["4", "3", "5", "3", "9", "3"];
-        let diff = difference(v1, v2)?;
-        assert_eq!(diff, 11);
+        let dist = distance(v1, v2)?;
+        assert_eq!(dist, 11);
         Ok(())
     }
 
     #[test]
-    fn test_difference_negative() -> Result<()> {
+    fn test_distance_negative() -> Result<()> {
         let v1 = vec!["3", "4", "asd", "1", "3", "3"];
         let v2 = vec!["4", "3", "5", "3", "9", "3"];
-        let diff = difference(v1, v2);
-        assert!(diff.is_err_and(|e| e.to_string().eq("failed parsing asd to number")));
+        let dist = distance(v1, v2);
+        assert!(dist.is_err_and(|e| e.to_string().eq("failed parsing asd to number")));
         Ok(())
     }
 
