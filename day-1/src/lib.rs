@@ -5,6 +5,32 @@
 
 use anyhow::{Context, Error, Ok, Result};
 
+/// Find repetitions of a symbol in a vector
+/// 
+/// Finds provided string repetitions in a provided string vector
+/// Returns int32 repetitions number or Error
+/// 
+/// # Example
+/// ```
+/// use anyhow::{Ok, Result};
+/// 
+/// fn main() -> Result<()> {
+///     let v = vec!["3", "4", "2", "1", "3", "3"];
+///     let s = "3";
+///     let reps = day_1::repetitions(s, v)?;
+///     assert_eq!(reps, 3);
+///     Ok(())
+/// }
+/// ```
+pub fn repetitions(sym: &str, list: Vec<&str>) -> Result<i32>{
+    let rep: i32 = list.iter()
+    .filter(|&s| s.eq(&sym))
+    .count()
+    .try_into()
+    .with_context(|| format!("failure finding repetitions for {}", sym))?;
+
+    Ok(rep)
+}
 
 /// Find distance between 2 vectors
 /// 
@@ -113,7 +139,16 @@ pub fn get_lists(text: &str) -> Result<(Vec<&str>, Vec<&str>), Error> {
 mod tests {
     use assert_fs::prelude::*;
     use anyhow::{Ok, Result};
-    use crate::{distance, get_lists, read_file};
+    use crate::{distance, get_lists, read_file, repetitions};
+
+    #[test]
+    fn test_repetitions_success() -> Result<()> {
+        let v = vec!["3", "4", "2", "1", "3", "3"];
+        let s = "3";
+        let reps = repetitions(s, v)?;
+        assert_eq!(reps, 3);
+        Ok(())
+    }
 
     #[test]
     fn test_distance_success() -> Result<()> {
