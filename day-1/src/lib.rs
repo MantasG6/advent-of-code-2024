@@ -5,6 +5,39 @@
 
 use anyhow::{Context, Error, Ok, Result};
 
+/// Find similarity score
+/// 
+/// Finds the similarity score required for the challenge
+/// Similarity score is calculated by going through * `list1`
+/// and calculating [repetitions] of each element in * `list2`
+/// and multiplying * `list1` element by the repetitions number.
+/// 
+/// # Examples
+/// ```
+/// use anyhow::{Ok, Result};
+/// 
+/// fn main() -> Result<()> {
+///     let v1 = vec!["3", "4", "2", "1", "3", "3"];
+///     let v2 = vec!["4", "3", "5", "3", "9", "3"];
+///     let sc = day_1::similarity_score(&v1, &v2)?;
+///     assert_eq!(sc, 31);
+///     Ok(())
+/// }
+/// ```
+pub fn similarity_score(list1: &Vec<&str>, list2: &Vec<&str>) -> Result<i32> {
+    let mut sc = 0;
+
+    for sym in list1 {
+        let num = sym.parse::<i32>()
+        .with_context(|| format!("failed parsing {} to number", sym))?;
+        
+        let reps = repetitions(sym, &list2)?;
+
+        sc += num * reps;
+    }
+    Ok(sc)
+}
+
 /// Find repetitions of a symbol in a vector
 /// 
 /// Finds provided string repetitions in a provided string vector
@@ -17,12 +50,12 @@ use anyhow::{Context, Error, Ok, Result};
 /// fn main() -> Result<()> {
 ///     let v = vec!["3", "4", "2", "1", "3", "3"];
 ///     let s = "3";
-///     let reps = day_1::repetitions(s, v)?;
+///     let reps = day_1::repetitions(s, &v)?;
 ///     assert_eq!(reps, 3);
 ///     Ok(())
 /// }
 /// ```
-pub fn repetitions(sym: &str, list: Vec<&str>) -> Result<i32>{
+pub fn repetitions(sym: &str, list: &Vec<&str>) -> Result<i32>{
     let rep: i32 = list.iter()
     .filter(|&s| s.eq(&sym))
     .count()
@@ -44,12 +77,12 @@ pub fn repetitions(sym: &str, list: Vec<&str>) -> Result<i32>{
 /// fn main() -> Result<()> {
 ///     let v1 = vec!["3", "4", "2", "1", "3", "3"];
 ///     let v2 = vec!["4", "3", "5", "3", "9", "3"];
-///     let dist = day_1::distance(v1, v2)?;
+///     let dist = day_1::distance(&v1, &v2)?;
 ///     assert_eq!(dist, 11);
 ///     Ok(())
 /// }
 /// ```
-pub fn distance(list1: Vec<&str>, list2: Vec<&str>) -> Result<i32> {
+pub fn distance(list1: &Vec<&str>, list2: &Vec<&str>) -> Result<i32> {
     let mut dist: i32 = 0;
 
     let mut sorted_list1 = list1.clone();
@@ -139,13 +172,31 @@ pub fn get_lists(text: &str) -> Result<(Vec<&str>, Vec<&str>), Error> {
 mod tests {
     use assert_fs::prelude::*;
     use anyhow::{Ok, Result};
-    use crate::{distance, get_lists, read_file, repetitions};
+    use crate::{distance, get_lists, read_file, repetitions, similarity_score};
+
+    #[test]
+    fn test_similarity_score_success() -> Result<()> {
+        let v1 = vec!["3", "4", "2", "1", "3", "3"];
+        let v2 = vec!["4", "3", "5", "3", "9", "3"];
+        let sc = similarity_score(&v1, &v2)?;
+        assert_eq!(sc, 31);
+        Ok(())
+    }
+
+    #[test]
+    fn test_similarity_score_negative() -> Result<()> {
+        let v1 = vec!["3", "4", "asd", "1", "3", "3"];
+        let v2 = vec!["4", "3", "5", "3", "9", "3"];
+        let sc = similarity_score(&v1, &v2);
+        assert!(sc.is_err_and(|e| e.to_string().eq("failed parsing asd to number")));
+        Ok(())
+    }
 
     #[test]
     fn test_repetitions_success() -> Result<()> {
         let v = vec!["3", "4", "2", "1", "3", "3"];
         let s = "3";
-        let reps = repetitions(s, v)?;
+        let reps = repetitions(s, &v)?;
         assert_eq!(reps, 3);
         Ok(())
     }
@@ -154,7 +205,7 @@ mod tests {
     fn test_distance_success() -> Result<()> {
         let v1 = vec!["3", "4", "2", "1", "3", "3"];
         let v2 = vec!["4", "3", "5", "3", "9", "3"];
-        let dist = distance(v1, v2)?;
+        let dist = distance(&v1, &v2)?;
         assert_eq!(dist, 11);
         Ok(())
     }
@@ -163,7 +214,7 @@ mod tests {
     fn test_distance_negative() -> Result<()> {
         let v1 = vec!["3", "4", "asd", "1", "3", "3"];
         let v2 = vec!["4", "3", "5", "3", "9", "3"];
-        let dist = distance(v1, v2);
+        let dist = distance(&v1, &v2);
         assert!(dist.is_err_and(|e| e.to_string().eq("failed parsing asd to number")));
         Ok(())
     }
