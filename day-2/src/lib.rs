@@ -4,6 +4,7 @@
 //! Functions to complete the task for advent of code 2024
 
 use anyhow::{Context, Error, Ok, Result};
+use std::fs::File;
 
 /// Reads a file from a given path
 /// 
@@ -14,34 +15,43 @@ use anyhow::{Context, Error, Ok, Result};
 /// ```
 /// use assert_fs::prelude::*;
 /// use anyhow::Result;
+/// use std::io::Read;
 /// 
 /// fn main() -> Result<()> {
-///     let file = assert_fs::NamedTempFile::new("sample.txt")?;
-///     file.write_str("Example text")?;
-///     let result = day_2::read_file(file.path())?;
-///     println!("{}", result);
+///     let temp_file = assert_fs::NamedTempFile::new("sample.txt")?;
+///     temp_file.write_str("A test\nActual content\nMore content\nAnother test")?;
+///
+///     let mut file_obj = day_2::read_file(temp_file.path())?;
+///     let mut contents = String::new();
+///     file_obj.read_to_string(&mut contents)?;
+///
+///     assert_eq!(contents, "A test\nActual content\nMore content\nAnother test");
 ///     Ok(())
 /// }
 /// ```
-pub fn read_file(path: &std::path::Path) -> Result<String, Error> {
-    let contents = std::fs::read_to_string(path)
+pub fn read_file(path: &std::path::Path) -> Result<File, Error> {
+    let file = File::open(path)
     .with_context(|| format!("could not read file {}", path.display()))?;
-
-    Ok(contents)
+    
+    Ok(file)
 }
 
 #[cfg(test)]
 mod tests {
+    use std::io::Read;
     use assert_fs::prelude::*;
     use anyhow::{Ok, Result};
 
     #[test]
     fn test_read_file_success() -> Result<()> {
-        let file = assert_fs::NamedTempFile::new("sample.txt")?;
-        file.write_str("A test\nActual content\nMore content\nAnother test")?;
+        let temp_file = assert_fs::NamedTempFile::new("sample.txt")?;
+        temp_file.write_str("A test\nActual content\nMore content\nAnother test")?;
 
-        let result = crate::read_file(file.path())?;
-        assert_eq!(result, "A test\nActual content\nMore content\nAnother test");
+        let mut file_obj = crate::read_file(temp_file.path())?;
+        let mut contents = String::new();
+        file_obj.read_to_string(&mut contents)?;
+
+        assert_eq!(contents, "A test\nActual content\nMore content\nAnother test");
         Ok(())
     }
 
