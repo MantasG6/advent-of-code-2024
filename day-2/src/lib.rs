@@ -8,6 +8,51 @@
 use anyhow::{Context, Error, Ok, Result};
 use std::{fs::File, io::{BufRead, BufReader}};
 
+/// Problem dampener finds report safe if it has only 1 bad level
+/// 
+/// Problem dampener takes a report and location of the bad level
+/// and does retries by removing the bad level or nearby levels
+/// 
+/// # Examples
+/// ```
+/// use anyhow::Result;
+/// 
+/// fn test_problem_dampener() -> Result<()> {
+///     let v = vec![1, 2, 2, 3, 4, 5];
+///     let safe = day_2::problem_dampener(&v, 2)?;
+///     assert!(safe);
+///     Ok(())
+/// }
+/// ```
+pub fn problem_dampener(report: &Vec<i32>, fail_idx: usize) -> Result<bool, Error> {
+    // retry by removing fail value
+    let mut rep_copy = report.clone();
+    rep_copy.remove(fail_idx);
+    let (safe, _) = safe_report(&rep_copy)?;
+    if safe {
+        return Ok(true);
+    }
+    // retry by removing value before fail value
+    if fail_idx != 0 {
+        let mut rep_copy = report.clone();
+        rep_copy.remove(fail_idx - 1);
+        let (safe, _) = safe_report(&rep_copy)?;
+        if safe {
+            return Ok(true);
+        }
+    }
+    // retry by removing value after fail value
+    if fail_idx != rep_copy.len() {
+        let mut rep_copy = report.clone();
+        rep_copy.remove(fail_idx + 1);
+        let (safe, _) = safe_report(&rep_copy)?;
+        if safe {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
 /// Find the number of safe reports
 /// 
 /// Returns a number of safe reports or error of operation failed
@@ -19,11 +64,11 @@ use std::{fs::File, io::{BufRead, BufReader}};
 /// use anyhow::Result;
 /// 
 /// fn main() -> Result<()> {
-///     let file = day_2::read_file(std::path::Path::new("./data/input_test_2.txt"))?;
+///     let file = day_2::read_file(std::path::Path::new("./data/input_test_4.txt"))?;
 ///
 ///     let num_safe_reports = day_2::safe_reports_number(file)?;
 ///
-///     assert_eq!(num_safe_reports, 2);
+///     assert_eq!(num_safe_reports, 4);
 ///     Ok(())
 /// }
 /// ```
@@ -34,7 +79,10 @@ pub fn safe_reports_number(file: File) -> Result<i32, Error> {
     for line in reader.lines() {
         let report = line.with_context(|| format!("failed to read line"))?;
         let report_vec = report_as_vector(&report)?;
-        let report_safe = crate::safe_report(&report_vec)?;
+        let (mut report_safe, fail_index) = crate::safe_report(&report_vec)?;
+        if !report_safe {
+            report_safe = problem_dampener(&report_vec, fail_index)?;
+        }
         if report_safe {
             num_safe_reports += 1;
         }
@@ -144,12 +192,12 @@ pub fn report_as_vector(report_str: &str) -> Result<Vec<i32>, Error> {
 /// 
 /// fn test_inspect_report_success_safe() -> Result<()> {
 ///     let rep = vec![1, 2, 3, 4, 5];
-///     let safe = day_2::safe_report(&rep)?;
+///     let (safe, _) = day_2::safe_report(&rep)?;
 ///     assert!(safe);
 ///     Ok(())
 /// }
 /// ```
-pub fn safe_report(report: &Vec<i32>) -> Result<bool, Error> {
+pub fn safe_report(report: &Vec<i32>) -> Result<(bool, usize), Error> {
     let mut prev_is_ascending = false;
     let mut prev_is_descending = false;
     for i in 1..report.len() {
@@ -163,20 +211,20 @@ pub fn safe_report(report: &Vec<i32>) -> Result<bool, Error> {
         let is_descending = crate::is_descending(level_prev, level_curr);
 
         if !is_ascending && !is_descending {
-            return Ok(false);
+            return Ok((false, i));
         }
         if i > 1 {
             if is_ascending && !prev_is_ascending {
-                return Ok(false);
+                return Ok((false, i));
             }
             if is_descending && !prev_is_descending {
-                return Ok(false);
+                return Ok((false, i));
             }
         }
         prev_is_ascending = is_ascending;
         prev_is_descending = is_descending;
     }
-    Ok(true)
+    Ok((true, 0))
 }
 
 /// Reads a file from a given path
@@ -216,6 +264,14 @@ mod tests {
     use anyhow::{Ok, Result};
 
     #[test]
+    fn test_problem_dampener() -> Result<()> {
+        let v = vec![1, 2, 2, 3, 4, 5];
+        let safe = crate::problem_dampener(&v, 2)?;
+        assert!(safe);
+        Ok(())
+    }
+
+    #[test]
     fn test_report_as_vector_success() -> Result<()> {
         let report = "1 2 3 4 5";
         let v = crate::report_as_vector(&report)?;
@@ -232,19 +288,19 @@ mod tests {
     }
 
     #[test]
-    fn test_safe_reports_number() -> Result<()> {
-        let file = crate::read_file(std::path::Path::new("./data/input_test_2.txt"))?;
+    fn test_safe_reports_number_success() -> Result<()> {
+        let file = crate::read_file(std::path::Path::new("./data/input_test_4.txt"))?;
 
         let num_safe_reports = crate::safe_reports_number(file)?;
 
-        assert_eq!(num_safe_reports, 2);
+        assert_eq!(num_safe_reports, 4);
         Ok(())
     }
 
     #[test]
     fn test_safe_report_success_safe() -> Result<()> {
         let rep = vec![1, 2, 3, 5, 8];
-        let safe = crate::safe_report(&rep)?;
+        let (safe, _) = crate::safe_report(&rep)?;
         assert!(safe);
         Ok(())
     }
@@ -252,8 +308,8 @@ mod tests {
     #[test]
     fn test_safe_report_success_unsafe() -> Result<()> {
         let rep = vec![2, 1, 2, 2, 1, 4];
-        let not_safe = !crate::safe_report(&rep)?;
-        assert!(not_safe);
+        let (safe, _) = crate::safe_report(&rep)?;
+        assert!(!safe);
         Ok(())
     }
 
