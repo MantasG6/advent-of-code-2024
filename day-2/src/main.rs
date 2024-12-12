@@ -7,7 +7,9 @@ fn main() -> Result<()> {
     let mut file = day_2::read_file(input_path)?;
     let mut content = String::new();
     file.read_to_string(&mut content)?;
-    println!("{}", content);
+
+    let safe = day_2::safe_report("1 2 3 4")?;
+    println!("{}", safe);
 
     Ok(())
 }
