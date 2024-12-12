@@ -2,6 +2,8 @@
 //! Advent of code 2024 Day 2 Challenge
 //! 
 //! Functions to complete the task for advent of code 2024
+//! 
+//! [`Read more`](../../../README.md)
 
 use anyhow::{Context, Error, Ok, Result};
 use std::fs::File;
