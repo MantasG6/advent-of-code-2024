@@ -6,7 +6,41 @@
 //! [`Read more`](../../../README.md)
 
 use anyhow::{Context, Error, Ok, Result};
-use std::fs::File;
+use std::{fs::File, io::{BufRead, BufReader}};
+
+/// Find the number of safe reports
+/// 
+/// Returns a number of safe reports or error of operation failed
+/// Uses [`read_file`] to read file and 
+/// [`safe_report`] to determine if report is safe
+/// 
+/// # Example
+/// ```
+/// use anyhow::Result;
+/// 
+/// fn main() -> Result<()> {
+///     let file = day_2::read_file(std::path::Path::new("./data/input_test_2.txt"))?;
+///
+///     let num_safe_reports = day_2::safe_reports_number(file)?;
+///
+///     assert_eq!(num_safe_reports, 2);
+///     Ok(())
+/// }
+/// ```
+pub fn safe_reports_number(file: File) -> Result<i32, Error> {
+    let mut num_safe_reports = 0;
+
+    let reader = BufReader::new(file);
+    for line in reader.lines() {
+        let report = line.with_context(|| format!("failed to read line"))?;
+        let report_safe = crate::safe_report(&report)?;
+        if report_safe {
+            num_safe_reports += 1;
+        }
+    }
+
+    Ok(num_safe_reports)
+}
 
 /// Check if 2 number sequence is descending
 /// 
@@ -73,6 +107,8 @@ pub fn is_ascending(previous_number: i32, current_number: i32) -> bool {
 /// Determines whether provided report is safe or not
 /// 
 /// Returns `true` if the provided report is safe, returns `false` otherwise
+/// Uses functions [`is_ascending`] and [`is_descending`] to
+/// determine if the reports are safe
 /// 
 /// # Examples
 /// ```
@@ -156,6 +192,16 @@ mod tests {
     use assert_fs::prelude::*;
     use anyhow::{Ok, Result};
 
+
+    #[test]
+    fn test_safe_reports_number() -> Result<()> {
+        let file = crate::read_file(std::path::Path::new("./data/input_test_2.txt"))?;
+
+        let num_safe_reports = crate::safe_reports_number(file)?;
+
+        assert_eq!(num_safe_reports, 2);
+        Ok(())
+    }
 
     #[test]
     fn test_inspect_report_success_safe() -> Result<()> {
