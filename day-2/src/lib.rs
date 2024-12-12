@@ -210,15 +210,16 @@ pub fn safe_report(report: &Vec<i32>) -> Result<(bool, usize), Error> {
         let is_ascending = crate::is_ascending(level_prev, level_curr);
         let is_descending = crate::is_descending(level_prev, level_curr);
 
+        // to correctly check i - 1 (previous element index should be provided)
         if !is_ascending && !is_descending {
-            return Ok((false, i));
+            return Ok((false, i - 1));
         }
         if i > 1 {
             if is_ascending && !prev_is_ascending {
-                return Ok((false, i));
+                return Ok((false, i - 1));
             }
             if is_descending && !prev_is_descending {
-                return Ok((false, i));
+                return Ok((false, i - 1));
             }
         }
         prev_is_ascending = is_ascending;
@@ -265,8 +266,8 @@ mod tests {
 
     #[test]
     fn test_problem_dampener() -> Result<()> {
-        let v = vec![1, 2, 2, 3, 4, 5];
-        let safe = crate::problem_dampener(&v, 2)?;
+        let v = vec![2, 1, 2, 3, 4, 5];
+        let safe = crate::problem_dampener(&v, 1)?;
         assert!(safe);
         Ok(())
     }
