@@ -33,7 +33,8 @@ pub fn safe_reports_number(file: File) -> Result<i32, Error> {
     let reader = BufReader::new(file);
     for line in reader.lines() {
         let report = line.with_context(|| format!("failed to read line"))?;
-        let report_safe = crate::safe_report(&report)?;
+        let report_vec = report_as_vector(&report)?;
+        let report_safe = crate::safe_report(&report_vec)?;
         if report_safe {
             num_safe_reports += 1;
         }
@@ -51,12 +52,12 @@ pub fn safe_reports_number(file: File) -> Result<i32, Error> {
 /// use anyhow::Result;
 /// 
 /// fn main() -> Result<()> {
-///     let is_descending = day_2::is_descending(3, 1);
+///     let is_descending = day_2::is_descending(&3, &1);
 ///     assert!(is_descending);
 ///     Ok(())
 /// }
 /// ```
-pub fn is_descending(previous_number: i32, current_number: i32) -> bool {
+pub fn is_descending(previous_number: &i32, current_number: &i32) -> bool {
     if current_number == previous_number {
         return false;
     }
@@ -82,12 +83,12 @@ pub fn is_descending(previous_number: i32, current_number: i32) -> bool {
 /// use anyhow::Result;
 /// 
 /// fn main() -> Result<()> {
-///     let is_ascending = day_2::is_ascending(1, 2);
+///     let is_ascending = day_2::is_ascending(&1, &2);
 ///     assert!(is_ascending);
 ///     Ok(())
 /// }
 /// ```
-pub fn is_ascending(previous_number: i32, current_number: i32) -> bool {
+pub fn is_ascending(previous_number: &i32, current_number: &i32) -> bool {
     if current_number == previous_number {
         return false;
     }
@@ -104,6 +105,33 @@ pub fn is_ascending(previous_number: i32, current_number: i32) -> bool {
     return true;
 }
 
+/// Create a vector containing report values
+/// 
+/// Takes a string line, parses all symbols to integer values 
+/// and returns Vector containing those values
+/// 
+/// # Examples
+/// ```
+/// use anyhow::Result;
+/// 
+/// fn main() -> Result<()> {
+///     let report = "1 2 3 4 5";
+///     let v = day_2::report_as_vector(&report)?;
+///     assert_eq!(v.len(), 5);
+///     Ok(())
+/// }
+/// ```
+pub fn report_as_vector(report_str: &str) -> Result<Vec<i32>, Error> {
+    let mut report_vec: Vec<i32> = Vec::new();
+    let symbols = report_str.split(" ");
+    for sym in symbols {
+        let num = sym.parse::<i32>()
+        .with_context(|| format!("failed parsing {} to number", sym))?;
+        report_vec.push(num);
+    }
+    Ok(report_vec)
+}
+
 /// Determines whether provided report is safe or not
 /// 
 /// Returns `true` if the provided report is safe, returns `false` otherwise
@@ -115,29 +143,24 @@ pub fn is_ascending(previous_number: i32, current_number: i32) -> bool {
 /// use anyhow::Result;
 /// 
 /// fn test_inspect_report_success_safe() -> Result<()> {
-///     let rep = "1 2 3 5 8";
-///     let safe = day_2::safe_report(rep)?;
+///     let rep = vec![1, 2, 3, 4, 5];
+///     let safe = day_2::safe_report(&rep)?;
 ///     assert!(safe);
 ///     Ok(())
 /// }
 /// ```
-pub fn safe_report(report: &str) -> Result<bool, Error> {
-    let symbols: Vec<&str> = report.split(" ").collect();
+pub fn safe_report(report: &Vec<i32>) -> Result<bool, Error> {
     let mut prev_is_ascending = false;
     let mut prev_is_descending = false;
-    for i in 1..symbols.len() {
-        let sym_curr = symbols.get(i)
-        .with_context(|| format!("failed getting a symbol with index {}", i))?;
-        let num_curr = sym_curr.parse::<i32>()
-        .with_context(|| format!("failed parsing {} to number", sym_curr))?;
+    for i in 1..report.len() {
+        let level_curr = report.get(i)
+        .with_context(|| format!("failed getting a level with index {}", i))?;
 
-        let sym_prev = symbols.get(i-1)
-        .with_context(|| format!("failed getting a symbol with index {}", i-1))?;
-        let num_prev = sym_prev.parse::<i32>()
-        .with_context(|| format!("failed parsing {} to number", sym_prev))?;
+        let level_prev = report.get(i-1)
+        .with_context(|| format!("failed getting a level with index {}", i-1))?;
 
-        let is_ascending = crate::is_ascending(num_prev, num_curr);
-        let is_descending = crate::is_descending(num_prev, num_curr);
+        let is_ascending = crate::is_ascending(level_prev, level_curr);
+        let is_descending = crate::is_descending(level_prev, level_curr);
 
         if !is_ascending && !is_descending {
             return Ok(false);
@@ -192,6 +215,21 @@ mod tests {
     use assert_fs::prelude::*;
     use anyhow::{Ok, Result};
 
+    #[test]
+    fn test_report_as_vector_success() -> Result<()> {
+        let report = "1 2 3 4 5";
+        let v = crate::report_as_vector(&report)?;
+        assert_eq!(v.len(), 5);
+        Ok(())
+    }
+
+    #[test]
+    fn test_report_as_vector_negative() -> Result<()> {
+        let report = "1 2 3 asd 5";
+        let v = crate::report_as_vector(&report);
+        assert!(v.is_err_and(|e| e.to_string().eq("failed parsing asd to number")));
+        Ok(())
+    }
 
     #[test]
     fn test_safe_reports_number() -> Result<()> {
@@ -204,39 +242,31 @@ mod tests {
     }
 
     #[test]
-    fn test_inspect_report_success_safe() -> Result<()> {
-        let rep = "1 2 3 5 8";
-        let safe = crate::safe_report(rep)?;
+    fn test_safe_report_success_safe() -> Result<()> {
+        let rep = vec![1, 2, 3, 5, 8];
+        let safe = crate::safe_report(&rep)?;
         assert!(safe);
         Ok(())
     }
 
     #[test]
-    fn test_inspect_report_success_unsafe() -> Result<()> {
-        let rep = "2 1 2 2 1 4";
-        let not_safe = !crate::safe_report(rep)?;
+    fn test_safe_report_success_unsafe() -> Result<()> {
+        let rep = vec![2, 1, 2, 2, 1, 4];
+        let not_safe = !crate::safe_report(&rep)?;
         assert!(not_safe);
         Ok(())
     }
 
     #[test]
-    fn test_inspect_report_negative() -> Result<()> {
-        let rep = "1 2 4 asd 5 8";
-        let safe = crate::safe_report(rep);
-        assert!(safe.is_err_and(|e| e.to_string().eq("failed parsing asd to number")));
-        Ok(())
-    }
-
-    #[test]
     fn test_is_descending_succes() -> Result<()> {
-        let is_descending = crate::is_descending(3, 1);
+        let is_descending = crate::is_descending(&3, &1);
         assert!(is_descending);
         Ok(())
     }
 
     #[test]
     fn test_is_ascending_succes() -> Result<()> {
-        let is_ascending = crate::is_ascending(1, 2);
+        let is_ascending = crate::is_ascending(&1, &2);
         assert!(is_ascending);
         Ok(())
     }
