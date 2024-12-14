@@ -9,6 +9,39 @@ use anyhow::{Context, Error, Ok, Result};
 use regex::Regex;
 use std::{fs::File, io::{BufRead, BufReader}};
 
+/// Multiply numbers in provided instructions
+/// 
+/// Extract numbers from the instructions, multiply then and return a total sum
+/// 
+/// # Examples
+/// ```
+/// use anyhow::Result;
+/// 
+/// fn test_multiply_success() -> Result<()> {
+///     let v = vec!["mul(2,4)".to_string(), "mul(5,5)".to_string(),
+///     "mul(11,8)".to_string(), "mul(8,5)".to_string()];
+///     let m = day_3::multiply(&v)?;
+///     assert_eq!(m, 161);
+///     Ok(())
+/// }
+/// ```
+pub fn multiply(instructions: &Vec<String>) -> Result<i32, Error> {
+    let mut sum = 0;
+    for instruction in instructions {
+        let re = Regex::new(r"[\d]{1,3}").unwrap();
+        let v: Vec<String> = re.find_iter(instruction)
+        .map(|m| m.as_str().to_string()).collect();
+        let mut multiplied = 1;
+        for sym in v {
+            let num = sym.parse::<i32>()
+            .with_context(|| format!("failed parsing {} to number", sym))?;
+            multiplied *= num;
+        }
+        sum += multiplied;
+    }
+    Ok(sum)
+}
+
 /// Filter the corrupted memory
 /// 
 /// Filter corrupted memory and return only uncorrupted instructions
@@ -74,6 +107,15 @@ mod tests {
     use std::io::Read;
     use assert_fs::prelude::*;
     use anyhow::{Ok, Result};
+
+    #[test]
+    fn test_multiply_success() -> Result<()> {
+        let v = vec!["mul(2,4)".to_string(), "mul(5,5)".to_string(),
+        "mul(11,8)".to_string(), "mul(8,5)".to_string()];
+        let m = crate::multiply(&v)?;
+        assert_eq!(m, 161);
+        Ok(())
+    }
 
     #[test]
     fn test_filter_corrupted_success() -> Result<()> {
