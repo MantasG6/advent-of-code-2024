@@ -6,8 +6,38 @@
 //! [`Read more`](../../../README.md)
 
 use anyhow::{Context, Error, Ok, Result};
-use std::fs::File;
+use regex::Regex;
+use std::{fs::File, io::{BufRead, BufReader}};
 
+/// Filter the corrupted memory
+/// 
+/// Filter corrupted memory and return only uncorrupted instructions
+/// 
+/// # Examples
+/// ```
+/// use anyhow::Result;
+/// 
+/// fn main() -> Result<()> {
+///     let file = day_3::read_file(std::path::Path::new("./data/input_test_161.txt"))?;
+///     let v = day_3::filter_corrupted(file)?;
+///     assert_eq!(v, vec!["mul(2,4)", "mul(5,5)", "mul(11,8)", "mul(8,5)"]);
+///     Ok(())
+/// }
+/// ```
+pub fn filter_corrupted(file: File) -> Result<Vec<String>, anyhow::Error> {
+    let mut filtered = Vec::new();
+    let reader = BufReader::new(file);
+    
+    for line in reader.lines() {
+        let contents:String = line.with_context(|| format!("failed reading line"))?;
+        let re = Regex::new(r"mul\([\d]{1,3},[\d]{1,3}\)").unwrap();
+        let mut uncorrupted = re.find_iter(&contents)
+        .map(|m| m.as_str().to_string()).collect();
+        filtered.append(&mut uncorrupted);
+    }
+
+    Ok(filtered)
+}
 
 /// Reads a file from a given path
 /// 
@@ -45,6 +75,13 @@ mod tests {
     use assert_fs::prelude::*;
     use anyhow::{Ok, Result};
 
+    #[test]
+    fn test_filter_corrupted_success() -> Result<()> {
+        let file = crate::read_file(std::path::Path::new("./data/input_test_161.txt"))?;
+        let v = crate::filter_corrupted(file)?;
+        assert_eq!(v, vec!["mul(2,4)", "mul(5,5)", "mul(11,8)", "mul(8,5)"]);
+        Ok(())
+    }
 
     #[test]
     fn test_read_file_success() -> Result<()> {
