@@ -9,6 +9,44 @@ use anyhow::{Context, Error, Ok, Result};
 use regex::Regex;
 use std::{fs::File, io::{BufRead, BufReader}};
 
+/// Find and disable required instructions
+/// 
+/// Locate `do()` and `don't()` instructions and filter 
+/// out disabled multiplication instructions
+/// 
+/// # Examples
+/// ```
+/// use anyhow::Result;
+/// 
+/// fn test_filter_disabled_success() -> Result<()> {
+///     let v = vec!["mul(2,4)".to_string(), 
+///     "don't()".to_string(),
+///     "mul(5,5)".to_string(),
+///     "mul(11,8)".to_string(),
+///     "do()".to_string(),
+///     "mul(8,5)".to_string()];
+///     let new = day_3::filter_disabled(&v)?;
+///     assert_eq!(new, vec!["mul(2,4)", "mul(8,5)"]);
+///     Ok(())
+/// }
+/// ```
+pub fn filter_disabled(instructions: &Vec<String>) -> Result<Vec<String>, Error> {
+    let mut filtered = Vec::new();
+    let mut enabled = true;
+    for instruction in instructions {
+        if instruction.eq("don't()") {
+            enabled = false;
+
+        } else if instruction.eq("do()") {
+            enabled = true;
+
+        } else if enabled {
+            filtered.push(instruction.to_string());
+        }
+    }
+    Ok(filtered)
+}
+
 /// Multiply numbers in provided instructions
 /// 
 /// Extract numbers from the instructions, multiply then and return a total sum
@@ -28,7 +66,8 @@ use std::{fs::File, io::{BufRead, BufReader}};
 pub fn multiply(instructions: &Vec<String>) -> Result<i32, Error> {
     let mut sum = 0;
     for instruction in instructions {
-        let re = Regex::new(r"[\d]{1,3}").unwrap();
+        let re = Regex::new(r"[\d]{1,3}")
+        .with_context(|| format!("regex failed"))?;
         let v: Vec<String> = re.find_iter(instruction)
         .map(|m| m.as_str().to_string()).collect();
         let mut multiplied = 1;
@@ -51,9 +90,9 @@ pub fn multiply(instructions: &Vec<String>) -> Result<i32, Error> {
 /// use anyhow::Result;
 /// 
 /// fn main() -> Result<()> {
-///     let file = day_3::read_file(std::path::Path::new("./data/input_test_161.txt"))?;
+///     let file = day_3::read_file(std::path::Path::new("./data/input_test_48.txt"))?;
 ///     let v = day_3::filter_corrupted(file)?;
-///     assert_eq!(v, vec!["mul(2,4)", "mul(5,5)", "mul(11,8)", "mul(8,5)"]);
+///     assert_eq!(v, vec!["mul(2,4)", "don't()", "mul(5,5)", "mul(11,8)", "do()", "mul(8,5)"]);
 ///     Ok(())
 /// }
 /// ```
@@ -63,7 +102,8 @@ pub fn filter_corrupted(file: File) -> Result<Vec<String>, anyhow::Error> {
     
     for line in reader.lines() {
         let contents:String = line.with_context(|| format!("failed reading line"))?;
-        let re = Regex::new(r"mul\([\d]{1,3},[\d]{1,3}\)").unwrap();
+        let re = Regex::new(r"mul\([\d]{1,3},[\d]{1,3}\)|do\(\)|don't\(\)")
+        .with_context(|| format!("regex failed"))?;
         let mut uncorrupted = re.find_iter(&contents)
         .map(|m| m.as_str().to_string()).collect();
         filtered.append(&mut uncorrupted);
@@ -109,6 +149,19 @@ mod tests {
     use anyhow::{Ok, Result};
 
     #[test]
+    fn test_filter_disabled_success() -> Result<()> {
+        let v = vec!["mul(2,4)".to_string(), 
+        "don't()".to_string(),
+        "mul(5,5)".to_string(),
+        "mul(11,8)".to_string(),
+        "do()".to_string(),
+        "mul(8,5)".to_string()];
+        let new = crate::filter_disabled(&v)?;
+        assert_eq!(new, vec!["mul(2,4)", "mul(8,5)"]);
+        Ok(())
+    }
+
+    #[test]
     fn test_multiply_success() -> Result<()> {
         let v = vec!["mul(2,4)".to_string(), "mul(5,5)".to_string(),
         "mul(11,8)".to_string(), "mul(8,5)".to_string()];
@@ -119,9 +172,9 @@ mod tests {
 
     #[test]
     fn test_filter_corrupted_success() -> Result<()> {
-        let file = crate::read_file(std::path::Path::new("./data/input_test_161.txt"))?;
+        let file = crate::read_file(std::path::Path::new("./data/input_test_48.txt"))?;
         let v = crate::filter_corrupted(file)?;
-        assert_eq!(v, vec!["mul(2,4)", "mul(5,5)", "mul(11,8)", "mul(8,5)"]);
+        assert_eq!(v, vec!["mul(2,4)", "don't()", "mul(5,5)", "mul(11,8)", "do()", "mul(8,5)"]);
         Ok(())
     }
 
