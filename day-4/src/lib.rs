@@ -8,6 +8,70 @@
 use std::{fs::File, io::{BufRead, BufReader, Lines}};
 use anyhow::{Context, Error, Ok};
 
+/// Form a word from a string vector
+/// 
+/// Form a 4 letter word in a required direction
+/// 
+/// # Parameters
+/// 
+/// * `lines_vec` - A reference to a vector of strings. At least 4
+/// lines are requered to form 4 letter vertical / diagonal words.
+/// * `idx` - An index of the starting symbol in a line / string.
+/// * `dir` - Direction to form word `0` (vertical), `-1` (left diagonal), `1` (right diagonal).
+/// 
+/// # Returns
+/// 
+/// * `String` - Formed word in a chosen direction.
+fn form_word(lines_vec: &Vec<String>, idx: usize, dir: i32) -> String {
+    let mut s = String::new();
+    if ![0, -1, 1].contains(&dir) {
+        return s;
+    }
+    if lines_vec.len() < 4 {
+        return s;
+    }
+    for i in 0..4 {
+        let mut chars = lines_vec[(3 - i) as usize].chars();
+        let new_idx = idx as isize + i as isize * dir as isize;
+        if new_idx < 0 {
+            return s;
+        }
+        let opt = chars.nth(new_idx as usize);
+        match opt {
+            Some(c) => s.push(c),
+            None => return s
+        }
+    }
+    return s;
+}
+
+/// Count the amount of vertical and diagonal words in a string vector
+/// 
+/// # Parameters
+/// 
+/// * `lines_vec` - A reference to a vector of strings. At least 4
+/// lines are requered to form 4 letter vertical / diagonal words.
+/// * `idx` - An index of the starting symbol in a line / string.
+/// * `dir` - Direction to form word `0` (vertical), `-1` (left diagonal), `1` (right diagonal).
+/// 
+/// # Returns
+/// 
+/// * `String` - Formed word in a chosen direction.
+fn count_verticals(lines_vec: &Vec<String>) -> Result<usize, Error> {
+    let mut count = 0;
+    if lines_vec.len() < 4 {
+        return Ok(count);
+    }
+    for i in 0..lines_vec[3].len() {
+        for j in -1..2 {
+            let s = form_word(lines_vec, i, j);
+            count += s.matches("XMAS").count();
+            count += s.matches("SAMX").count();
+        }
+    }
+    Ok(count)
+}
+
 /// Shift vector by 1 iteration
 /// 
 /// Shift vector by 1 line, removing the first line and
@@ -78,7 +142,7 @@ fn vec_init<B: BufRead>(lines_iter: &mut Lines<B>) -> Result<Vec<String>, Error>
 /// 
 /// fn main() -> Result<()> {
 ///     let c = day_4::xmas_count(std::path::Path::new("./data/input_test_18.txt"))?;
-///     assert_eq!(c, 5);
+///     assert_eq!(c, 18);
 ///     Ok(())
 /// }
 /// ```
@@ -98,6 +162,10 @@ pub fn xmas_count(input_path: &std::path::Path) -> Result<usize, Error> {
         count += lines_vec[0].matches("XMAS").count();
         // count backwards matches
         count += lines_vec[0].matches("SAMX").count();
+        // count vertical and diagonal matches
+        count += count_verticals(&lines_vec)?;
+
+        // update lines vector
         lines_vec = vec_update(&mut lines_vec, &mut lines_iter)?;
     }
 
@@ -111,9 +179,54 @@ mod tests {
     use anyhow::{Ok, Result};
 
     #[test]
+    fn test_count_verticals() -> Result<()> {
+        let data = vec![
+            "AMXSXMAAMM".to_string(),
+            "MSAMASMSMX".to_string(),
+            "XMASAMXAMM".to_string(),
+            "XXAMMXXAMA".to_string()];
+        let count = crate::count_verticals(&data)?;
+        assert_eq!(count, 2);
+        Ok(())
+    }
+
+    #[test]
+    fn test_form_word_right_diag() {
+        let data = vec![
+            "MMMSXXMASM".to_string(),
+            "MSAMXMSMSA".to_string(),
+            "AMXSXMAAMM".to_string(),
+            "MSAMASMSMX".to_string()];
+        let s = form_word(&data, 5, 1);
+        assert_eq!(s, "SAMS");
+    }
+
+    #[test]
+    fn test_form_word_left_diag() {
+        let data = vec![
+            "MMMSXXMASM".to_string(),
+            "MSAMXMSMSA".to_string(),
+            "AMXSXMAAMM".to_string(),
+            "MSAMASMSMX".to_string()];
+        let s = form_word(&data, 5, -1);
+        assert_eq!(s, "SXMM");
+    }
+    
+    #[test]
+    fn test_form_word_vertical() {
+        let data = vec![
+            "MMMSXXMASM".to_string(),
+            "MSAMXMSMSA".to_string(),
+            "AMXSXMAAMM".to_string(),
+            "MSAMASMSMX".to_string()];
+        let s = form_word(&data, 5, 0);
+        assert_eq!(s, "SMMX");
+    }
+
+    #[test]
     fn test_xmas_count() -> Result<()> {
         let c = xmas_count(std::path::Path::new("./data/input_test_18.txt"))?;
-        assert_eq!(c, 5);
+        assert_eq!(c, 18);
         Ok(())
     }
 
