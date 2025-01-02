@@ -5,7 +5,7 @@ fn main() -> Result<()>{
     
     let xmas_count = day_4::xmas_count(input)?;
 
-    println!("XMAS_COUNT: {}", xmas_count);
-    
+    println!("X-MAS_COUNT: {}", xmas_count);
+
     Ok(())
 }

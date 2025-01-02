@@ -10,12 +10,12 @@ use anyhow::{Context, Error, Ok};
 
 /// Form a word from a string vector
 /// 
-/// Form a 4 letter word in a required direction
+/// Form a 3 letter word in a required direction
 /// 
 /// # Parameters
 /// 
-/// * `lines_vec` - A reference to a vector of strings. At least 4
-/// lines are requered to form 4 letter vertical / diagonal words.
+/// * `lines_vec` - A reference to a vector of strings. At least 3
+/// lines are requered to form 3 letter vertical / diagonal words.
 /// * `idx` - An index of the starting symbol in a line / string.
 /// * `dir` - Direction to form word `0` (vertical), `-1` (left diagonal), `1` (right diagonal).
 /// 
@@ -27,11 +27,11 @@ fn form_word(lines_vec: &Vec<String>, idx: usize, dir: i32) -> String {
     if ![0, -1, 1].contains(&dir) {
         return s;
     }
-    if lines_vec.len() < 4 {
+    if lines_vec.len() < 3 {
         return s;
     }
-    for i in 0..4 {
-        let mut chars = lines_vec[(3 - i) as usize].chars();
+    for i in 0..3 {
+        let mut chars = lines_vec[(2 - i) as usize].chars();
         let new_idx = idx as isize + i as isize * dir as isize;
         if new_idx < 0 {
             return s;
@@ -49,24 +49,22 @@ fn form_word(lines_vec: &Vec<String>, idx: usize, dir: i32) -> String {
 /// 
 /// # Parameters
 /// 
-/// * `lines_vec` - A reference to a vector of strings. At least 4
-/// lines are requered to form 4 letter vertical / diagonal words.
-/// * `idx` - An index of the starting symbol in a line / string.
-/// * `dir` - Direction to form word `0` (vertical), `-1` (left diagonal), `1` (right diagonal).
+/// * `lines_vec` - A reference to a vector of strings. At least 3
+/// lines are requered to form 3 letter vertical / diagonal words.
 /// 
 /// # Returns
 /// 
-/// * `String` - Formed word in a chosen direction.
+/// * `Result<usize, Error>` - Number of `MAS` in provided vector.
 fn count_verticals(lines_vec: &Vec<String>) -> Result<usize, Error> {
     let mut count = 0;
-    if lines_vec.len() < 4 {
+    if lines_vec.len() < 3 {
         return Ok(count);
     }
-    for i in 0..lines_vec[3].len() {
-        for j in -1..2 {
+    for i in 0..lines_vec[2].len() {
+        for j in [-1, 1] {
             let s = form_word(lines_vec, i, j);
-            count += s.matches("XMAS").count();
-            count += s.matches("SAMX").count();
+            count += s.matches("MAS").count();
+            count += s.matches("SAM").count();
         }
     }
     Ok(count)
@@ -89,20 +87,19 @@ fn count_verticals(lines_vec: &Vec<String>) -> Result<usize, Error> {
 fn vec_update<B: BufRead>(v: &mut Vec<String>, iter: &mut Lines<B>) -> Result<Vec<String>, Error> {
     v[0] = v[1].clone();
     v[1] = v[2].clone();
-    v[2] = v[3].clone();
     let opt = iter.next();
     match opt {
-        Some(new) => v[3] = new.with_context(|| "failed reading line")?,
-        None => v[3] = String::new()
+        Some(new) => v[2] = new.with_context(|| "failed reading line")?,
+        None => v[2] = String::new()
     }
     Ok(v.to_vec())
 
 }
 
-/// Initialize a 4-line vector from a [BufReader] iterator.
+/// Initialize a 3-line vector from a [BufReader] iterator.
 /// 
-/// Reads up to 4 lines from the provided iterator and initializes a vector with these lines.
-/// If fewer than 4 lines are available, the remaining entries in the vector are filled with empty strings.
+/// Reads up to 3 lines from the provided iterator and initializes a vector with these lines.
+/// If fewer than 3 lines are available, the remaining entries in the vector are filled with empty strings.
 /// 
 /// # Parameters
 /// 
@@ -110,10 +107,10 @@ fn vec_update<B: BufRead>(v: &mut Vec<String>, iter: &mut Lines<B>) -> Result<Ve
 /// 
 /// # Returns
 /// 
-/// * `Result<Vec<String>, Error>` - A vector containing up to 4 lines read from the iterator, or an error.
+/// * `Result<Vec<String>, Error>` - A vector containing up to 3 lines read from the iterator, or an error.
 fn vec_init<B: BufRead>(lines_iter: &mut Lines<B>) -> Result<Vec<String>, Error> {
     let mut v = Vec::new();
-    for _ in 0..4 {
+    for _ in 0..3 {
         let opt = lines_iter.next();
         match opt {
             Some(res) => v.push(res.with_context(|| "failed reading line")?),
@@ -141,8 +138,8 @@ fn vec_init<B: BufRead>(lines_iter: &mut Lines<B>) -> Result<Vec<String>, Error>
 /// use anyhow::Result;
 /// 
 /// fn main() -> Result<()> {
-///     let c = day_4::xmas_count(std::path::Path::new("./data/input_test_18.txt"))?;
-///     assert_eq!(c, 18);
+///     let c = day_4::xmas_count(std::path::Path::new("./data/input_test_9.txt"))?;
+///     assert_eq!(c, 25);
 ///     Ok(())
 /// }
 /// ```
@@ -158,10 +155,6 @@ pub fn xmas_count(input_path: &std::path::Path) -> Result<usize, Error> {
     let mut lines_vec = vec_init(&mut lines_iter)?;
 
     while !lines_vec[0].is_empty() {
-        // count horizontal matches
-        count += lines_vec[0].matches("XMAS").count();
-        // count backwards matches
-        count += lines_vec[0].matches("SAMX").count();
         // count vertical and diagonal matches
         count += count_verticals(&lines_vec)?;
 
@@ -183,10 +176,9 @@ mod tests {
         let data = vec![
             "AMXSXMAAMM".to_string(),
             "MSAMASMSMX".to_string(),
-            "XMASAMXAMM".to_string(),
-            "XXAMMXXAMA".to_string()];
+            "XMASAMXAMM".to_string()];
         let count = crate::count_verticals(&data)?;
-        assert_eq!(count, 2);
+        assert_eq!(count, 4);
         Ok(())
     }
 
@@ -195,10 +187,9 @@ mod tests {
         let data = vec![
             "MMMSXXMASM".to_string(),
             "MSAMXMSMSA".to_string(),
-            "AMXSXMAAMM".to_string(),
-            "MSAMASMSMX".to_string()];
+            "AMXSXMAAMM".to_string()];
         let s = form_word(&data, 5, 1);
-        assert_eq!(s, "SAMS");
+        assert_eq!(s, "MSA");
     }
 
     #[test]
@@ -206,10 +197,9 @@ mod tests {
         let data = vec![
             "MMMSXXMASM".to_string(),
             "MSAMXMSMSA".to_string(),
-            "AMXSXMAAMM".to_string(),
-            "MSAMASMSMX".to_string()];
+            "AMXSXMAAMM".to_string()];
         let s = form_word(&data, 5, -1);
-        assert_eq!(s, "SXMM");
+        assert_eq!(s, "MXS");
     }
     
     #[test]
@@ -217,16 +207,15 @@ mod tests {
         let data = vec![
             "MMMSXXMASM".to_string(),
             "MSAMXMSMSA".to_string(),
-            "AMXSXMAAMM".to_string(),
-            "MSAMASMSMX".to_string()];
+            "AMXSXMAAMM".to_string()];
         let s = form_word(&data, 5, 0);
-        assert_eq!(s, "SMMX");
+        assert_eq!(s, "MMX");
     }
 
     #[test]
     fn test_xmas_count() -> Result<()> {
-        let c = xmas_count(std::path::Path::new("./data/input_test_18.txt"))?;
-        assert_eq!(c, 18);
+        let c = xmas_count(std::path::Path::new("./data/input_test_9.txt"))?;
+        assert_eq!(c, 25);
         Ok(())
     }
 
@@ -237,13 +226,12 @@ mod tests {
         let reader = BufReader::new(cursor);
         
         let mut lines_iter = reader.lines();
-        lines_iter.nth(3); // Skip the first 4 lines
+        lines_iter.nth(2); // Skip the first 2 lines
     
         let mut lines_vec = vec![
             "MMMSXXMASM".to_string(),
             "MSAMXMSMSA".to_string(),
-            "AMXSXMAAMM".to_string(),
-            "MSAMASMSMX".to_string()
+            "AMXSXMAAMM".to_string()
         ];
     
         lines_vec = vec_update(&mut lines_vec, &mut lines_iter)?;
@@ -251,8 +239,7 @@ mod tests {
         assert_eq!(lines_vec, vec![
             "MSAMXMSMSA".to_string(),
             "AMXSXMAAMM".to_string(),
-            "MSAMASMSMX".to_string(),
-            "XMASAMXAMM".to_string()
+            "MSAMASMSMX".to_string()
         ]);
         Ok(())
     }
@@ -270,8 +257,7 @@ mod tests {
         assert_eq!(lines_vec, vec![
         "MMMSXXMASM".to_string(),
         "MSAMXMSMSA".to_string(),
-        "AMXSXMAAMM".to_string(),
-        "MSAMASMSMX".to_string()]);
+        "AMXSXMAAMM".to_string()]);
         Ok(())
     }
 }
