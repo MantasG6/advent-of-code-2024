@@ -45,7 +45,7 @@ fn form_word(lines_vec: &Vec<String>, idx: usize, dir: i32) -> String {
     return s;
 }
 
-/// Count the amount of vertical and diagonal words in a string vector
+/// Count the amount of X-shaped MAS words in 3 lines string vector
 /// 
 /// # Parameters
 /// 
@@ -54,20 +54,21 @@ fn form_word(lines_vec: &Vec<String>, idx: usize, dir: i32) -> String {
 /// 
 /// # Returns
 /// 
-/// * `Result<usize, Error>` - Number of `MAS` in provided vector.
-fn count_verticals(lines_vec: &Vec<String>) -> Result<usize, Error> {
+/// * `usize` - Number of X-shaped `MAS` in provided vector.
+fn count_verticals(lines_vec: &Vec<String>) -> usize {
     let mut count = 0;
     if lines_vec.len() < 3 {
-        return Ok(count);
+        return count;
     }
-    for i in 0..lines_vec[2].len() {
-        for j in [-1, 1] {
-            let s = form_word(lines_vec, i, j);
-            count += s.matches("MAS").count();
-            count += s.matches("SAM").count();
+    for i in 0..lines_vec[2].len() - 2 {
+        let s1 = form_word(lines_vec, i, 1);
+        let s2 = form_word(lines_vec, i + 2, -1);
+        if (s1.contains("MAS") || s1.contains("SAM")) &&
+        (s2.contains("MAS") || s2.contains("SAM")) {
+            count += 1;
         }
     }
-    Ok(count)
+    return count;
 }
 
 /// Shift vector by 1 iteration
@@ -122,8 +123,7 @@ fn vec_init<B: BufRead>(lines_iter: &mut Lines<B>) -> Result<Vec<String>, Error>
 
 /// Count XMAS matches in a file
 /// 
-/// Count horizontal, vertical, diagonal, backwards and overflowing XMAS matches
-/// in a provided file path
+/// Count X-shaped `MAS` words in a file
 /// 
 /// # Parameters
 /// 
@@ -139,7 +139,7 @@ fn vec_init<B: BufRead>(lines_iter: &mut Lines<B>) -> Result<Vec<String>, Error>
 /// 
 /// fn main() -> Result<()> {
 ///     let c = day_4::xmas_count(std::path::Path::new("./data/input_test_9.txt"))?;
-///     assert_eq!(c, 25);
+///     assert_eq!(c, 9);
 ///     Ok(())
 /// }
 /// ```
@@ -154,9 +154,9 @@ pub fn xmas_count(input_path: &std::path::Path) -> Result<usize, Error> {
 
     let mut lines_vec = vec_init(&mut lines_iter)?;
 
-    while !lines_vec[0].is_empty() {
+    while !lines_vec[2].is_empty() {
         // count vertical and diagonal matches
-        count += count_verticals(&lines_vec)?;
+        count += count_verticals(&lines_vec);
 
         // update lines vector
         lines_vec = vec_update(&mut lines_vec, &mut lines_iter)?;
@@ -177,8 +177,8 @@ mod tests {
             "AMXSXMAAMM".to_string(),
             "MSAMASMSMX".to_string(),
             "XMASAMXAMM".to_string()];
-        let count = crate::count_verticals(&data)?;
-        assert_eq!(count, 4);
+        let count = count_verticals(&data);
+        assert_eq!(count, 2);
         Ok(())
     }
 
@@ -215,7 +215,7 @@ mod tests {
     #[test]
     fn test_xmas_count() -> Result<()> {
         let c = xmas_count(std::path::Path::new("./data/input_test_9.txt"))?;
-        assert_eq!(c, 25);
+        assert_eq!(c, 9);
         Ok(())
     }
 
@@ -252,7 +252,7 @@ mod tests {
     
         let mut lines_iter = reader.lines();
 
-        let lines_vec = crate::vec_init(&mut lines_iter)?;
+        let lines_vec = vec_init(&mut lines_iter)?;
 
         assert_eq!(lines_vec, vec![
         "MMMSXXMASM".to_string(),
