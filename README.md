@@ -1,5 +1,7 @@
 # Advent of Code 2024 challenge
 This December was special in a sense that I managed to come across this interesting version of Advent Calendar.
+
+The main point of this was to just have some fun and play around with a new language. This year I managed to solve 9 puzzles until I decided to move on.
 ## Puzzles
 - Each day of contains 2 programming puzzles
 - All puzzles contain storyline to save Christmas
